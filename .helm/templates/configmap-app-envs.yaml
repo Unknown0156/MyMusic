@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-app-envs
+data:
+  {{- range $key, $val := .Values.app.envs }}
+  "{{ $key }}": "{{ $val }}"
+  {{- end }}
+  APP_ENVIRONMENT: {{ .Values.env_name }}
+  ELASTIC_APM_ENVIRONMENT: {{ .Values.env_name }}
+  OTEL_SERVICE_NAME: mymusic-{{ .Values.env_name }}

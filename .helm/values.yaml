@@ -1,0 +1,9 @@
+app:
+  envs:
+    MINIO_ENDPOINT: "https://minio.example.ru:443"
+    MINIO_BUCKET_NAME: mymusic
+    DJANGO_SETTINGS_MODULE: mymusic.settings
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability.svc.cluster.local:4317"
+    OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+    OTEL_METRICS_EXPORTER: none
+    OTEL_LOGS_EXPORTER: none

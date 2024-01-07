@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}MyMusic{% endblock title %}
+{% block content %}
+
+<header>
+    <a class="logo" href="">
+        <img src="{% static 'images/logo.png' %}">
+        MyMusic
+    </a>
+    <ul class="menu">
+        <li>
+            <a href="">
+                Home
+            </a>
+        </li>
+        <li>
+            <a href="">
+                About
+            </a>
+        </li>
+        <li>
+            <a href="">
+                News
+            </a>
+        </li>
+        <li>
+            <a href="">
+                Contact
+            </a>
+        </li>
+    </ul>
+</header>
+
+<section class="main">
+        <div class="cover"></div>
+        <div class="name"></div>
+        <div class="artist"></div>
+</section>
+
+<aside class="playlist">
+{% for song in playlist %}
+    <div class="song" onclick="loadTrack({{ song.order }} - 1);playTrack()">
+        {{ song.artist }} - {{ song.name }}
+    </div>
+{% endfor %}
+</aside>
+
+<section class="playbar">
+    <div class="seek_container">
+        <div class="current-time" onclick="toBeginning()">00:00</div>
+        <input type="range" min="1" max="100" value="0" class="seek_slider" onchange="seekTo()">
+        <div class="total-duration" on onclick="toEnding()">00:00</div>
+    </div>
+    <section class="controls">
+        <div class="prev" onclick="prevTrack()">
+            <i class="fa fa-step-backward fa-2x"></i>
+        </div>
+        <div class="playpause" onclick="playpauseTrack()">
+            <i class="fa fa-play-circle fa-5x"></i>
+        </div>
+        <div class="next" onclick="nextTrack()">
+            <i class="fa fa-step-forward fa-2x"></i>
+        </div>
+    </section>
+    <div class="volume_container">
+        <i class="fa fa-volume-down" onclick="muteSound()"></i>
+        <input type="range" min="1" max="100" value="99" class="volume_slider" onchange="setVolume()">
+        <i class="fa fa-volume-up" onclick="maxVolume()"></i>
+    </div>
+
+</section>
+<script>
+    let playlist = {{ playlist | safe }};
+</script>
+{% endblock content %}

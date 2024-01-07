@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - podAffinityTerm:
+        labelSelector:
+          matchLabels:
+            app: {{ .Release.Name }}
+        topologyKey: kubernetes.io/hostname
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+      annotations:
+        checksum/configmap-nginx: '{{ include (print $.Template.BasePath "/configmap-nginx.yaml") . | sha256sum }}'
+        checksum/configmap-app-envs: '{{ include (print $.Template.BasePath "/configmap-app-envs.yaml") . | sha256sum }}'
+    spec:
+      initContainers:
+      - name: wait-postgres
+        image: postgres:14.1-alpine
+        command:
+        - sh
+        - -ec
+        - |
+          until (pg_isready -h kubdb-primary.postgres.svc.cluster.local -p 5432 -U postgres); do
+            sleep 1
+          done
+        resources:
+          requests:
+            cpu: 50m
+            memory: 50Mi
+          limits:
+            cpu: 50m
+            memory: 50Mi
+      containers:
+      - name: backend
+        image: {{ .Values.werf.image.backend }}
+        command:
+          - opentelemetry-instrument
+          - gunicorn
+          - -c 
+          - gunicorn.config.py
+          - --bind
+          - 0.0.0.0:8000
+          - mymusic.wsgi:application
+        ports:
+          - containerPort: 8000
+        env:
+          - name: DB_HOST
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: host
+          - name: DB_PORT
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: port
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: dbname
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: user
+          - name: DB_PASS
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: password
+          - name: MINIO_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: minio-secret
+                key: accesskey
+          - name: MINIO_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: minio-secret
+                key: secretkey
+        envFrom:
+          - configMapRef:
+              name: {{ .Release.Name }}-app-envs
+        readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 60
+            timeoutSeconds: 5
+        livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 120
+            timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 250m
+            memory: 64Mi
+      - name: frontend
+        image: {{ .Values.werf.image.frontend }}
+        ports:
+        - containerPort: 80
+        readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 60
+            timeoutSeconds: 5
+        livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 120
+            timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 25m
+            memory: 25Mi
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -ec
+              - |
+                sleep 3
+                nginx -s quit
+        volumeMounts:
+          - mountPath: /etc/nginx/nginx.conf
+            subPath: nginx.conf
+            name: nginx-conf
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: {{ .Release.Name }}-nginx-conf

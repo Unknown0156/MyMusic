@@ -1,0 +1,72 @@
+stages:
+  - build
+  - deploy
+  - dismiss
+  - cleanup
+
+before_script:
+  - source "$(werf ci-env gitlab --as-file)"
+
+Build and Publish:
+  stage: build
+  script:
+    - werf cr login harbor.example.ru
+    - werf build
+  except: [schedules]
+  tags: [werf-kub]
+
+.base_deploy:
+  stage: deploy
+  script:
+    - werf converge --require-built-images=true --set "env_url=$(echo ${CI_ENVIRONMENT_URL} | cut -d / -f 3),env_name=${CI_ENVIRONMENT_NAME}"
+  except: [schedules]
+  tags: [werf-kub]
+
+Review:
+  extends: .base_deploy
+  environment:
+    name: review
+    url: https://mymusic-review.example.ru
+    on_stop: Stop Review
+    auto_stop_in: 1 day
+  artifacts:
+    paths:
+      - .werf-deploy-report.json
+  only: [merge_requests]
+  when: manual
+
+Stop Review:
+  stage: dismiss
+  script:
+    - werf dismiss
+  environment:
+    name: review
+    action: stop
+  variables:
+    GIT_STRATEGY: none
+  only: [merge_requests]
+  when: manual
+  tags: [werf-kub]
+
+Deploy to Staging:
+  extends: .base_deploy
+  environment:
+    name: staging
+    url: https://mymusic-staging.example.ru
+  only: [main]
+
+Deploy to Production:
+  extends: .base_deploy
+  environment:
+    name: production
+    url: https://mymusic.example.ru
+  only: [main]
+  when: manual
+
+Cleanup:
+  stage: cleanup
+  script:
+    - werf cr login harbor.example.ru
+    - werf cleanup
+  only: [schedules]
+  tags: [werf-kub]

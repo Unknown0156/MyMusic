@@ -1,0 +1,77 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "setup-db-{{ .Release.Name }}-rev{{ .Release.Revision }}"
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: waiting-db
+        image: {{ .Values.werf.image.backend }}
+        env:
+          - name: DB_HOST
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: host
+          - name: DB_PORT
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: port
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: dbname
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: user
+          - name: DB_PASS
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: password
+        command: 
+          - python3
+          - manage.py
+          - wait_for_db
+      containers:
+      - name: setup-and-migrate-db
+        image: {{ .Values.werf.image.backend }}
+        env:
+          - name: DB_HOST
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: host
+          - name: DB_PORT
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: port
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: dbname
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: user
+          - name: DB_PASS
+            valueFrom:
+              secretKeyRef:
+                name: kubdb-pguser-mymusic
+                key: password
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - >-
+              python3 manage.py makemigrations &&
+              python3 manage.py migrate

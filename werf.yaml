@@ -1,0 +1,43 @@
+project: mymusic
+configVersion: 1
+---
+image: requirements
+from: python:3.10-slim
+git:
+- add: /requirements.txt
+  to: /requirements.txt
+  stageDependencies:
+    install: ["."]
+shell:
+  install:
+  - pip install -r requirements.txt --no-cache-dir
+  - opentelemetry-bootstrap --action=install
+---
+image: backend
+fromImage: requirements
+git:
+- add: /
+  to: /mymusic
+  excludePaths:
+  - .helm/
+  - .gitlab-ci.yml
+  - werf.yaml
+shell:
+  setup:
+  - cd /mymusic
+  - python3 manage.py collectstatic --noinput
+docker:
+    WORKDIR: /mymusic
+    ENV:
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
+---
+image: frontend
+from: nginx:1.23
+import:
+- image: backend
+  add: /mymusic/static
+  to: /var/www/static
+  after: setup
+docker:
+    WORKDIR: /var/www
