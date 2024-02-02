@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ''
+SECRET_KEY = 'django-insecure-8)xh3-e_i8uu&mk^zo_ksqmxm@c7sd8pehi_vmqn+orc&f2#=z'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = (os.getenv('APP_ENVIRONMENT')!="production")
@@ -31,9 +31,7 @@ ALLOWED_HOSTS = [
     '*',
 ]
 
-
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -41,16 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-#    'elasticapm.contrib.django',
     'musicapp',
     'storages',
 ]
-
-ELASTIC_APM = {
-    'SERVER_URL': 'http://elk.example.ru:8200',
-    'SERVICE_NAME': 'mymusic',
-    'DEBUG': True,
-}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -97,6 +88,9 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASS'),
         'HOST': os.getenv('DB_HOST'),
         'PORT': os.getenv('DB_PORT'),
+        'TEST': {
+            'NAME': os.getenv('DB_NAME') + '_test',
+        },
     }
 }
 
@@ -148,10 +142,6 @@ AWS_S3_FILE_OVERWRITE = False
 STATIC_URL = '/static/'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
-#MEDIA_URL = '/media/'
-
-#MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # Default primary key field type

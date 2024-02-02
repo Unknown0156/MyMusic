@@ -1,8 +1,8 @@
 project: mymusic
 configVersion: 1
 ---
-image: requirements
-from: python:3.10-slim
+artifact: requirements
+from: python:3.10
 git:
 - add: /requirements.txt
   to: /requirements.txt
@@ -14,7 +14,20 @@ shell:
   - opentelemetry-bootstrap --action=install
 ---
 image: backend
-fromImage: requirements
+from: python:3.10-slim
+import:
+  - artifact: requirements
+    add: /usr/local/lib/python3.10/site-packages
+    to: /usr/local/lib/python3.10/site-packages
+    after: install
+  - artifact: requirements
+    add: /usr/local/bin/opentelemetry-instrument
+    to: /usr/local/bin/opentelemetry-instrument
+    after: install
+  - artifact: requirements
+    add: /usr/local/bin/gunicorn
+    to: /usr/local/bin/gunicorn
+    after: install
 git:
 - add: /
   to: /mymusic
@@ -24,6 +37,8 @@ git:
   - werf.yaml
 shell:
   setup:
+  - apt update
+  - apt install -y libpq5
   - cd /mymusic
   - python3 manage.py collectstatic --noinput
 docker:

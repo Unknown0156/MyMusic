@@ -1,5 +1,6 @@
 stages:
   - build
+  - test
   - deploy
   - dismiss
   - cleanup
@@ -19,6 +20,15 @@ Build and Publish:
   stage: deploy
   script:
     - werf converge --require-built-images=true --set "env_url=$(echo ${CI_ENVIRONMENT_URL} | cut -d / -f 3),env_name=${CI_ENVIRONMENT_NAME}"
+  except: [schedules]
+  tags: [werf-kub]
+
+Test:
+  stage: test
+  script:
+    - werf kube-run backend -- python ./manage.py test --keepdb
+  environment:
+    name: test
   except: [schedules]
   tags: [werf-kub]
 

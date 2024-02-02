@@ -46,8 +46,8 @@ spec:
         command:
           - opentelemetry-instrument
           - gunicorn
-          - -c 
-          - gunicorn.config.py
+          - -w
+          - '2'
           - --bind
           - 0.0.0.0:8000
           - mymusic.wsgi:application
@@ -94,14 +94,14 @@ spec:
               name: {{ .Release.Name }}-app-envs
         readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: 8000
             initialDelaySeconds: 3
             periodSeconds: 60
             timeoutSeconds: 5
         livenessProbe:
             httpGet:
-              path: /
+              path: /health
               port: 8000
             initialDelaySeconds: 5
             periodSeconds: 120
@@ -116,14 +116,14 @@ spec:
         - containerPort: 80
         readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: 80
             initialDelaySeconds: 3
             periodSeconds: 60
             timeoutSeconds: 5
         livenessProbe:
             httpGet:
-              path: /
+              path: /health
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 120

@@ -1,9 +1,8 @@
 django==3.2.13
 pillow==8.4.0
-psycopg2-binary==2.9.3
+psycopg2==2.9.3
 django-storages==1.13.2
 boto3==1.28.16
-elastic-apm==6.16.2
 gunicorn==21.2.0
 opentelemetry-distro==0.40b0
 opentelemetry-exporter-otlp-proto-grpc==1.19.0
